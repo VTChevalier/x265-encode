@@ -21,6 +21,7 @@
 #   ./encode.sh [Media File].mkv/mp4/m2ts
 #
 usage() { echo "Usage: $0 -q [Quick Encode] -f MEDIA.MKV" 1>&2; exit 1; }
+CURDIR=`pwd`
 
 HANDBRAKE=`/usr/bin/which HandBrakeCLI`
 MEDIAINFO=`/usr/bin/which mediainfo`
@@ -53,6 +54,12 @@ elif [ ! -f "$INFILE" ]; then
   exit 1;
 fi
 
+# fine the file no mater where this is run
+DIRNAME="`/usr/bin/dirname \"$INFILE\"`"
+if [ "$DIRNAME" != "." ]; then
+  CURDIR=$DIRNAME
+fi
+
 OPTIONS="--markers --encoder x264 --encoder-tune film $TWOPASS --x264-preset $QUALITY"
 OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=14020:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=inf"
 OPTIONS="$OPTIONS --h264-level 4.1"
@@ -66,11 +73,17 @@ OPTIONS="$OPTIONS -a 1,1 -E copy,ffac3" #original audio and ac3 convert
 OPTIONS="$OPTIONS --all-subtitles "
 
 OUTFILE="$(/bin/echo $INFILE | /usr/bin/rev | /usr/bin/cut -f 2- -d '.' | /usr/bin/rev)"
-LOGFILE="/tmp/$OUTFILE.log"
-OUTFILE="$OUTFILE-x264.mkv"
+LOGFILE="/tmp/x264-$OUTFILE.log"
+INFILE="$CURDIR/`/usr/bin/basename \"$INFILE\"`"
+OUTFILE="$CURDIR/$OUTFILE-x264.mkv"
 
-echo -e "Encoding: $INFILE"
+COMMAND=`echo "$HANDBRAKE $OPTIONS --input "\"${INFILE}\"" --output "\"${OUTFILE}\"" > "\"${LOGFILE}\"" 2>&1"`
 
-`/usr/bin/screen -d -m "$HANDBRAKE $OPTIONS --input "$INFILE" --output "$OUTFILE" 2>&1 | /usr/bin/tee -a "$LOGFILE"`
+/bin/echo $COMMAND > /tmp/x264.job
+/bin/echo "rm /tmp/x264.job" >> /tmp/x264.job
+
+/bin/chmod +x /tmp/x264.job
+
+/usr/bin/screen -S "Encoding $OUTPUT" -dm `/tmp/x264.job` & 
 
 exit 0;
