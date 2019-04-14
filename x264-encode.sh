@@ -9,8 +9,6 @@
 #
 # Written by Victor T. Chevalier
 #
-# Designed for use with openvpn on Ubuntu 18.04/16.04 LTS
-#
 # This script depends on two separate command line tools:
 #
 #   HandBrakeCLI    http://handbrake.fr
