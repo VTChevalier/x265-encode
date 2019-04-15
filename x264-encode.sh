@@ -16,7 +16,7 @@
 #
 # Usage:
 #
-#   ./encode.sh [Media File].mkv/mp4/m2ts
+#   ./x264-encode.sh [Media File].mkv/mp4/m2ts
 #
 X264JOB="/tmp/x264.job"
 createQueue() {
@@ -57,7 +57,7 @@ while getopts :hf:q option
 do
   case "${option}"
     in
-    f) INFILE=${OPTARG};;
+    f) INFILE="${OPTARG}";;
     q) QUALITY="ultrafast" TWOPASS="--no-two-pass";;
     h | *) usage;;
   esac
@@ -80,7 +80,7 @@ OPTIONS="--markers --encoder x264 --encoder-tune film $TWOPASS --x264-preset $QU
 OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=14020:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=inf"
 OPTIONS="$OPTIONS --h264-profile high --h264-level 4.1"
 OPTIONS="$OPTIONS -M 709" #compatability
-OPTIONS="$OPTIONS -X 1920"
+OPTIONS="$OPTIONS -X 1920 -Y 1080"
 OPTIONS="$OPTIONS --vb 14020"
 OPTIONS="$OPTIONS --crop 0:0:0:0 --auto-anamorphic"
 
@@ -90,9 +90,10 @@ OPTIONS="$OPTIONS -a 1,1 -E copy,ffac3" #original audio and ac3 convert
 #--subtitle-forced --subtitle-default "
 OPTIONS="$OPTIONS --all-subtitles "
 
-OUTFILE="$(/usr/bin/basename \"$INFILE\" | /usr/bin/rev | /usr/bin/cut -f 2- -d '.' | /usr/bin/rev)"
+INFILE="`/usr/bin/basename \"$INFILE\"`"
+OUTFILE="$(echo ${INFILE} | /usr/bin/rev | /usr/bin/cut -f 2- -d '.' | /usr/bin/rev)"
 LOGFILE="/tmp/x264-$OUTFILE.log"
-INFILE="$CURDIR/`/usr/bin/basename \"$INFILE\"`"
+INFILE="$CURDIR/${INFILE}"
 OUTFILE="$CURDIR/$OUTFILE-x264.mkv"
 
 COMMAND=`echo "$HANDBRAKE $OPTIONS --input "\"${INFILE}\"" --output "\"${OUTFILE}\"" > "\"${LOGFILE}\"" 2>&1"`
@@ -104,7 +105,7 @@ createQueue
 
 /bin/chmod +x "$X264JOB"
 
-/usr/bin/screen -S "Encoding $OUTPUT" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
+/usr/bin/screen -S "x264 encoding" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
 
 /bin/rm -f "$X264JOB".pid
 
