@@ -51,12 +51,15 @@ fi
 
 # Defaults (Max Quality Encode)
 INFILE="0"
+TUNE="film"
 QUALITY="placebo"
 TWOPASS="--two-pass"
-while getopts :hf:q option
+BITRATE="14020"
+while getopts :hf:qa option
 do
   case "${option}"
     in
+    a) TUNE="animation" BITRATE="4920";;
     f) INFILE="${OPTARG}";;
     q) QUALITY="ultrafast" TWOPASS="--no-two-pass";;
     h | *) usage;;
@@ -76,12 +79,12 @@ if [ "$DIRNAME" != "." ]; then
   CURDIR=$DIRNAME
 fi
 
-OPTIONS="--markers --encoder x264 --encoder-tune film $TWOPASS --x264-preset $QUALITY"
-OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=14020:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=inf"
-OPTIONS="$OPTIONS --h264-profile high --h264-level 4.1"
+OPTIONS="--markers --encoder x264 --encoder-tune $TUNE $TWOPASS --x264-preset $QUALITY"
+OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=$BITRATE:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=1.0"
+#OPTIONS="$OPTIONS --h264-profile high --h264-level 4.1"
 OPTIONS="$OPTIONS -M 709" #compatability
 OPTIONS="$OPTIONS -X 1920 -Y 1080"
-OPTIONS="$OPTIONS --vb 14020"
+OPTIONS="$OPTIONS --vb $BITRATE"
 OPTIONS="$OPTIONS --crop 0:0:0:0 --auto-anamorphic"
 
 # mux HD Audio, AC3 5.1 encode second
