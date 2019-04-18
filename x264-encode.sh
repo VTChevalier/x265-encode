@@ -14,7 +14,7 @@
 #   ./x264-encode.sh [-a -q] [-d dir] [-f media.mkv/mp4/m2ts]
 #
 DIR=""
-X264JOB="/tmp/x264.job.test"
+X264JOB="/tmp/x264.job"
 createQueue() {
   if [ -f "$X264JOB".pid ]
   then
@@ -124,7 +124,7 @@ createQueue
 
 /bin/chmod +x "$X264JOB"
 
-#/usr/bin/screen -S "x264 encoding" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
+/usr/bin/screen -S "x264 encoding" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
 
 
 exit 0;
