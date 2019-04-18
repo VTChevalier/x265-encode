@@ -10,8 +10,10 @@
 # Written by Victor T. Chevalier
 #
 # Usage:
+#   ./x264-encode.sh [-a -q] [-f media.mkv/mp4/m2ts]
 #
-#   ./x264-encode.sh [-a -q] [-d dir] [-f media.mkv/mp4/m2ts]
+# Bulk files:
+#   screen -dm ./x264-encode.sh [-a -q] [-d dir]
 #
 DIR=""
 X264JOB="/tmp/x264.job"
