@@ -11,9 +11,10 @@
 #
 # Usage:
 #
-#   ./x264-encode.sh [args] [-f Media File.mkv/mp4/m2ts]
+#   ./x264-encode.sh [-a -q] [-d dir] [-f media.mkv/mp4/m2ts]
 #
-X264JOB="/tmp/x264.job"
+DIR=""
+X264JOB="/tmp/x264.job.test"
 createQueue() {
   if [ -f "$X264JOB".pid ]
   then
@@ -31,7 +32,7 @@ createQueue() {
   done
 }
 
-usage() { echo "Usage: $0 -a [anime] -q [Quick Encode] -f MEDIA.MKV" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -a [anime] -q [quick encode] [-d dir] [-f media.mkv/mp4/m2ts]" 1>&2; exit 1; }
 CURDIR=`pwd`
 
 HANDBRAKE=`/usr/bin/which HandBrakeCLI`
@@ -50,16 +51,35 @@ TUNE="film"
 QUALITY="placebo"
 TWOPASS="--two-pass"
 BITRATE="14020"
-while getopts :hf:qa option
+while getopts :hf:d:qa option
 do
   case "${option}"
     in
     a) TUNE="animation" BITRATE="4920";;
+    d) DIR="${OPTARG}";;
     f) INFILE="${OPTARG}";;
     q) QUALITY="ultrafast" TWOPASS="--no-two-pass";;
     h | *) usage;;
   esac
 done
+
+if [ "$DIR" != "" ]; then
+  find /mnt/Movies -type f \( -iname \*.mkv -o -iname \*.mp4 -o -iname \*.m2ts\) |  while read -r dir
+  do
+    if [ -f "$dir" ]; then
+      echo "encode $dir"
+      PASSARGS=""
+      if [ $TUNE == "animation" ]; then
+        PASSARGS="-a $PASSARGS"
+      fi
+      if [ $QUALITY == "ultrafast" ]; then
+        PASSARGS="-q $PASSARGS"
+      fi
+
+      `./x264-encode.sh $PASSARGS -f "$dir"`
+    fi
+  done
+fi
 
 if [ "$INFILE" == "0" ]; then
   usage
@@ -99,12 +119,12 @@ COMMAND=`echo "$HANDBRAKE $OPTIONS --input "\"${INFILE}\"" --output "\"${OUTFILE
 createQueue
 
 /bin/echo $COMMAND > "$X264JOB"
-/bin/echo "rm \"$X264JOB\"" >> "$X264JOB"
+/bin/echo "/bin/rm \"$X264JOB\"" >> "$X264JOB"
+/bin/echo "/bin/rm \"$X264JOB\".pid" >> "$X264JOB"
 
 /bin/chmod +x "$X264JOB"
 
-/usr/bin/screen -S "x264 encoding" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
+#/usr/bin/screen -S "x264 encoding" -dm `/tmp/x264.job & echo $!  > "$X264JOB".pid` & 
 
-/bin/rm -f "$X264JOB".pid
 
 exit 0;
