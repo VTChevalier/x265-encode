@@ -37,11 +37,16 @@ CURDIR=`pwd`
 
 HANDBRAKE=`/usr/bin/which HandBrakeCLI`
 MEDIAINFO=`/usr/bin/which mediainfo`
+SCREEN=`/usr/bin/which screen`
 if [ ! "$HANDBRAKE" ]; then
   echo -e "Please install HandBrakeCLI, sudo apt update && sudo apt install handbrakecli" >&2
   exit 1;
 elif [ ! "$MEDIAINFO" ]; then
   echo -e "Please install mediainfo, sudo apt update && sudo apt install mediainfo" >&2
+  exit 1;
+fi
+elif [ ! "$SCREEN" ]; then
+  echo -e "Please install screen, sudo apt update && sudo apt install screen" >&2
   exit 1;
 fi
 
@@ -64,7 +69,7 @@ do
 done
 
 if [ "$DIR" != "" ]; then
-  find /mnt/Movies -type f \( -iname \*.mkv -o -iname \*.mp4 -o -iname \*.m2ts\) |  while read -r dir
+  find "$DIR" -type f -iname *.mkv |  while read -r dir
   do
     if [ -f "$dir" ]; then
       echo "encode $dir"
