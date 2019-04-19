@@ -70,7 +70,7 @@ do
 done
 
 if [ "$DIR" != "" ]; then
-  find "$DIR" -type f -iname *.mkv |  while read -r dir
+  find "$DIR" -type f -iname \*.mkv |  while read -r dir
   do
     if [ -f "$dir" ]; then
       echo "encode $dir"
