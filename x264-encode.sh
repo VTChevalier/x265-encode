@@ -46,7 +46,6 @@ if [ ! "$HANDBRAKE" ]; then
 elif [ ! "$MEDIAINFO" ]; then
   echo -e "Please install mediainfo, sudo apt update && sudo apt install mediainfo" >&2
   exit 1;
-fi
 elif [ ! "$SCREEN" ]; then
   echo -e "Please install screen, sudo apt update && sudo apt install screen" >&2
   exit 1;
