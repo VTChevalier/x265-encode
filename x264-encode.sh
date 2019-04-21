@@ -15,6 +15,7 @@
 # Bulk files:
 #   screen -dm ./x264-encode.sh [-a -q] [-d dir]
 #
+LOGDIR="/tmp/" # can set this to a specific folder if desired
 DIR=""
 X264JOB="/tmp/x264.job"
 createQueue() {
@@ -116,7 +117,7 @@ OPTIONS="$OPTIONS --subtitle scan,1,2,3,4,5,6,7,8,9,10 -a 1,2,3,4,5,6,7,8,9,10"
 
 INFILE="`/usr/bin/basename \"$INFILE\"`"
 OUTFILE="$(echo ${INFILE} | /usr/bin/rev | /usr/bin/cut -f 2- -d '.' | /usr/bin/rev)"
-LOGFILE="/tmp/x264-$OUTFILE.log"
+LOGFILE="${LOGDIR}x264-$OUTFILE.log"
 INFILE="$CURDIR/${INFILE}"
 OUTFILE="$CURDIR/$OUTFILE-x264.mkv"
 
@@ -127,6 +128,7 @@ createQueue
 /bin/echo $COMMAND > "$X264JOB"
 /bin/echo "/bin/rm \"$X264JOB\"" >> "$X264JOB"
 /bin/echo "/bin/rm \"$X264JOB\".pid" >> "$X264JOB"
+/bin/echo "exit" >> "$X264JOB"
 
 /bin/chmod +x "$X264JOB"
 
