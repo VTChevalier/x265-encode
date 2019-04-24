@@ -110,7 +110,7 @@ OPTIONS="$OPTIONS --vb $BITRATE"
 OPTIONS="$OPTIONS --crop 0:0:0:0 --auto-anamorphic"
 
 # mux HD Audio, AC3 5.1 encode second
-OPTIONS="$OPTIONS -a 1,1 -E copy,ffac3" #original audio and ac3 convert
+OPTIONS="$OPTIONS -a 1,1 -E copy,ac3" #original audio and ac3 convert
 
 # this preserves subtitles
 OPTIONS="$OPTIONS --subtitle scan,1,2,3,4,5,6,7,8,9,10 -a 1,2,3,4,5,6,7,8,9,10"
