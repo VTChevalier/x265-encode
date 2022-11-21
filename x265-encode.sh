@@ -53,10 +53,8 @@ fi
 
 # Defaults (Max Quality Encode)
 INFILE="0"
-TUNE="film"
-QUALITY="placebo"
-TWOPASS="--two-pass"
-BITRATE="14020"
+#TWOPASS="--two-pass"
+#BITRATE="14020"
 while getopts :hf:d:qa option
 do
   case "${option}"
@@ -100,20 +98,50 @@ if [ "$DIRNAME" != "." ]; then
   CURDIR=$DIRNAME
 fi
 
-OPTIONS="--markers --encoder x265_10bit --encoder-tune $TUNE $TWOPASS --x265-preset $QUALITY"
-OPTIONS="$OPTIONS -X 1920 -Y 1080"
+OPTIONS="--markers --encoder x265_10bit"
+# if 1920x1080 enhance quality
+HDRSPEED="veryslow" 
+HDR=""
+WIDTH=3840
+XSIZE=1920
+YSIZE=1080
+if [ A$WIDTH == A`$MEDIAINFO -f $INFILE | grep -w Width | grep 3840 | cut -d ':' -f 2 | xargs` ]
+then
+  HDRSPEED="slower"
+  HDR=":hdr10:hdr10-opt"
+  XSIZE=3840
+  YSIZE=2160
+  # HDR->SDR ffmpeg -i 4K.ts -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p -c:v h264 -crf 19 -preset ultrafast output.mp4
+fi
+HDRSPEED="ultrafast"
+QUALITY="16"
+QUALITY="50"
+
+OPTIONS="$OPTIONS --encopts selective-sao=0$HDR"
+OPTIONS="$OPTIONS -q $QUALITY --encoder-preset $HDRSPEED"
+OPTIONS="$OPTIONS -X $XSIZE1920 -Y $YSIZE1080"
 OPTIONS="$OPTIONS --crop 0:0:0:0 --auto-anamorphic"
 
 # mux HD Audio, AC3 5.1 encode second
-OPTIONS="$OPTIONS --audio 1,2,3,4,5,6,7,8,9,10,11 --aencoder copy,copy,copy,copy,copy,copy,copy,copy,copy,copy,copy --audio-copy-mask ac3,eac3,dts,dtshd"
+#OPTIONS="$OPTIONS --audio-lang-list eng --all-audio -E copy --audio-copy-mask dtshd,dts,ac3,eac3"
+DTSID=`$MEDIAINFO $INFILE "--output=Audio;%ID% %Format% \n" | grep DTS | cut -d ' ' -f 1 | head -1 | xargs`
+if [ A$DTSID == A ]
+then
+  DTSID=`$MEDIAINFO $INFILE "--output=Audio;%ID% %Format% \n" | grep AC-3 | cut -d ' ' -f 1 | head -1 | xargs`
+fi
+DTSID=`expr $DTSID - 1`
+
+OPTIONS="$OPTIONS -a $DTSID -E copy"
+#OPTIONS="$OPTIONS --audio-lang-list eng -a $DTSID -E copy"
 
 # x265 codec specifics
-OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=$BITRATE:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=1.0"
+#OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=$BITRATE:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=1.0"
 OPTIONS="$OPTIONS --encoder-profile main10"
-OPTIONS="$OPTIONS --vb $BITRATE"
+OPTIONS="$OPTIONS --no-decomb --no-deinterlace"
+#OPTIONS="$OPTIONS --vb $BITRATE"
 
 # this preserves subtitles
-OPTIONS="$OPTIONS --all-subtitles"
+OPTIONS="$OPTIONS --subtitle-lang-list eng --all-subtitles"
 #OPTIONS="$OPTIONS --subtitle scan,1,2,3,4,5,6,7,8,9,10 -a 1,2,3,4,5,6,7,8,9,10"
 
 INFILE="`/usr/bin/basename \"$INFILE\"`"
