@@ -14,6 +14,20 @@
 # Bulk files:
 #   screen -dm ./x265-encode.sh [-a -q] [-d dir]
 #
+OPTIONS="--markers --encoder x265_10bit"
+# if 1920x1080 enhance quality
+HDRSPEED="veryslow" 
+HDR=""
+TUNE=""
+XSIZE=1920
+YSIZE=1080
+BITRATE=7010
+BITBUFF=40000
+THREADS=`lscpu | grep -E '^CPU\(s\)' | cut -d ':' -f 2 | xargs echo`
+if [ $THREADS -gt 2 ]
+then
+  THREADS=`expr $THREADS - 2`
+fi
 LOGDIR="/tmp/" # can set this to a specific folder if desired
 DIR=""
 X265JOB="/tmp/x265.job"
@@ -59,7 +73,7 @@ while getopts :hf:d:qa option
 do
   case "${option}"
     in
-    a) TUNE="animation" BITRATE="4920";;
+    a) TUNE="--encoder-tune animation" BITRATE="2460";;
     d) DIR="${OPTARG}";;
     f) INFILE="${OPTARG}";;
     q) QUALITY="ultrafast" TWOPASS="--no-two-pass";;
@@ -98,28 +112,25 @@ if [ "$DIRNAME" != "." ]; then
   CURDIR=$DIRNAME
 fi
 
-OPTIONS="--markers --encoder x265_10bit"
-# if 1920x1080 enhance quality
-HDRSPEED="veryslow" 
-HDR=""
 WIDTH=3840
-XSIZE=1920
-YSIZE=1080
 if [ A$WIDTH == A`$MEDIAINFO -f $INFILE | grep -w Width | grep 3840 | cut -d ':' -f 2 | xargs` ]
 then
   HDRSPEED="slower"
   HDR=":hdr10:hdr10-opt"
   XSIZE=3840
   YSIZE=2160
+  BITRATE=18700
   # HDR->SDR ffmpeg -i 4K.ts -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p -c:v h264 -crf 19 -preset ultrafast output.mp4
+  #OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=$BITRATE:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=1.0"
 fi
-HDRSPEED="ultrafast"
-QUALITY="16"
-QUALITY="50"
+# x265 codec specifics
 
-OPTIONS="$OPTIONS --encopts selective-sao=0$HDR"
-OPTIONS="$OPTIONS -q $QUALITY --encoder-preset $HDRSPEED"
-OPTIONS="$OPTIONS -X $XSIZE1920 -Y $YSIZE1080"
+#HDRSPEED="ultrafast"
+QUALITY="16"
+VBVBIT=":bitrate=$BITRATE:vbv-maxrate=$BITBUFF:vbv-bufsize=$BITBUFF"
+OPTIONS="$OPTIONS --encopts threads=$THREADS:no-sao:selective-sao=0:deblock=-1:-1$HDR$VBVBIT"
+OPTIONS="$OPTIONS -q $QUALITY --encoder-preset $HDRSPEED $TUNE"
+OPTIONS="$OPTIONS -X $XSIZE -Y $YSIZE"
 OPTIONS="$OPTIONS --crop 0:0:0:0 --auto-anamorphic"
 
 # mux HD Audio, AC3 5.1 encode second
@@ -132,16 +143,14 @@ fi
 DTSID=`expr $DTSID - 1`
 
 OPTIONS="$OPTIONS -a $DTSID -E copy"
-#OPTIONS="$OPTIONS --audio-lang-list eng -a $DTSID -E copy"
 
-# x265 codec specifics
-#OPTIONS="$OPTIONS --encopts rc-lookahead=60:b-adapt=2:me=tesa:nal_hrd=vbr:min-keyint=1:keyint=24:bitrate=$BITRATE:vbv-maxrate=30000:vbv-bufsize=30000:ratetol=1.0"
-OPTIONS="$OPTIONS --encoder-profile main10"
+OPTIONS="$OPTIONS --encoder-profile main10 --encoder-level 5.1"
 OPTIONS="$OPTIONS --no-decomb --no-deinterlace"
 #OPTIONS="$OPTIONS --vb $BITRATE"
 
 # this preserves subtitles
-OPTIONS="$OPTIONS --subtitle-lang-list eng --all-subtitles"
+OPTIONS="$OPTIONS --native-language eng --subtitle scan,1,2,3,4,5,6,7,8,9,10 --subtitle-default scan --subtitle-forced scan"
+#OPTIONS="$OPTIONS --subtitle-lang-list eng --subtitle scan --subtitle-forced scan --subtitle-default scan --all-subtitles"
 #OPTIONS="$OPTIONS --subtitle scan,1,2,3,4,5,6,7,8,9,10 -a 1,2,3,4,5,6,7,8,9,10"
 
 INFILE="`/usr/bin/basename \"$INFILE\"`"
@@ -160,6 +169,36 @@ createQueue
 /bin/echo "exit" >> "$X265JOB"
 
 /bin/chmod +x "$X265JOB"
+
+#@echo off&setlocal
+#set "rootfolder=C:\video\test"
+#echo Enumerating all MKVs under %rootfolder%
+#echo.
+#for /r "%rootfolder%" %%a in (*.mkv) do (
+#    for /f %%b in ('mkvmerge  --ui-language en -i "%%a" ^| find /c /i "subtitles"') do (
+#        if "%%b"=="0" (
+#            echo(%%a has no subtitles
+#        ) else (
+#            echo(%%a has subtitles
+#            set "line="
+#            for /f "delims=" %%i in ('mkvmerge --ui-language en --identify-verbose "%%a" ^| sed "/subtitles/!d;/language:eng/!d;s/.* \([0-9]*\):.*/\1/"') do (
+#                echo(english Track ID: %%i
+#                call set line=%%line%% %%i:"%%~dpna (Sub Track %%i).sub"
+#            )
+#            setlocal enabledelayedexpansion
+#            mkvextract tracks "%%a" --ui-language en !line! ||(echo Demuxing error!&goto:eof)
+#            endlocal
+#            mkvmerge -q -o "%%~dpna (No Subs)%%~xa" -S "%%a"
+#            if errorlevel 1 (
+#                echo Warnings/errors generated during remuxing, original file not deleted
+#            ) else (
+#                del /f "%%a"
+#                echo Successfully remuxed to "%%~dpna (No Subs)%%~xa", original file deleted
+#            )
+#            echo(
+#        )
+#    )
+#)
 
 /usr/bin/screen -S "x265 encoding" -dm `/tmp/x265.job & echo $!  > "$X265JOB".pid` & 
 
